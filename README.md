@@ -16,7 +16,7 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 - Campanhas em Meta Ads, Google, Bing, TikTok e Taboola
 - Atendimento por agente de IA, com leitura de texto, áudio, imagem e PDF
 - Funil de qualificação automatizado, com roteamento por critério
-- CRM multi-tenant: cada licenciado com dados isolados e funil independente
+- CRM em Supabase com Row Level Security, replicado com infraestrutura dedicada (Supabase, PostgreSQL, Redis) por licenciado
 - Dashboards de ganhos e perdas com atribuição por campanha
 
 ## Tecnologias utilizadas
