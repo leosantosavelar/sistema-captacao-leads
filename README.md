@@ -15,6 +15,7 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 - Sites de captação com rastreamento por pixel
 - Campanhas em Meta Ads, Google, Bing, TikTok e Taboola
 - Atendimento por agente de IA, com leitura de texto, áudio, imagem e PDF
+- Classificação estruturada por IA com saída JSON validada
 - Funil de qualificação automatizado, com score e roteamento por critério
 - CRM em Supabase com Row Level Security
 - Infraestrutura baseada em PostgreSQL e serviços auxiliares
@@ -30,7 +31,7 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 | Banco de dados | Supabase (PostgreSQL), SQL |
 | Orquestração | n8n |
 | Integrações | APIs REST, JSON, webhooks |
-| IA | Agentes para atendimento e qualificação |
+| IA | Agentes para atendimento, classificação e qualificação |
 | Mensuração | Pixels de conversão e rastreamento de origem |
 | Qualidade | node:test, GitHub Actions |
 
@@ -46,6 +47,8 @@ API / Webhook  →  Validação, normalização e idempotência
 CRM / Banco  →  Lead + eventos + origem
    ↓
 Agente de IA  →  Atendimento inicial
+   ↓
+Classificação IA  →  JSON estruturado + confiança
    ↓
 Qualificação  →  Score + prioridade + roteamento
    ↓
@@ -63,13 +66,16 @@ A documentação detalhada está em [`docs/architecture.md`](docs/architecture.m
 Os arquivos abaixo são versões simplificadas e sanitizadas de padrões usados na solução real:
 
 - [`src/webhook-example.js`](src/webhook-example.js) — validação, normalização e idempotência de uma entrada de lead em Node.js.
+- [`src/ai-classification-example.js`](src/ai-classification-example.js) — contrato JSON, validação de saída e conversão da interpretação da IA em sinais estruturados.
 - [`src/qualification-example.js`](src/qualification-example.js) — score, prioridade, qualificação e roteamento determinístico.
+- [`test/ai-classification-example.test.js`](test/ai-classification-example.test.js) — testes do contrato de classificação por IA.
 - [`test/qualification-example.test.js`](test/qualification-example.test.js) — testes automatizados da camada de qualificação.
 - [`database/example-schema.sql`](database/example-schema.sql) — exemplo de modelagem PostgreSQL com leads e eventos.
 - [`database/rls-example.sql`](database/rls-example.sql) — exemplo conceitual de Row Level Security no Supabase.
 - [`examples/webhook-payload.json`](examples/webhook-payload.json) — payload demonstrativo de entrada de lead.
 - [`docs/architecture.md`](docs/architecture.md) — decisões de arquitetura, observabilidade e segurança.
 - [`docs/qualification.md`](docs/qualification.md) — separação entre regras determinísticas e interpretação por IA.
+- [`docs/ai-classification.md`](docs/ai-classification.md) — contrato estruturado, confiança e fronteira entre IA e efeitos no sistema.
 
 Esses exemplos existem para demonstrar raciocínio técnico sem publicar regras comerciais, prompts, credenciais ou infraestrutura proprietária.
 
@@ -79,9 +85,11 @@ Nem toda decisão precisa de um modelo de linguagem. Critérios objetivos podem 
 
 O exemplo público segue este princípio:
 
-> **IA interpreta; regras controlam efeitos críticos.**
+> **IA interpreta; regras validam e controlam efeitos críticos.**
 
-Uma camada de IA pode enriquecer sinais como intenção, urgência percebida, objeção e solução de interesse. Antes de alterar CRM, atribuir um responsável ou disparar uma ação, o resultado deve ser convertido em dados estruturados e validado.
+A camada de IA produz uma saída estruturada com intenção, urgência, confiança, resumo e sinais. Essa saída é validada antes de enriquecer a qualificação determinística. Classificações abaixo do limite de confiança podem ser ignoradas ou encaminhadas para revisão/follow-up.
+
+O exemplo não depende de OpenAI, Anthropic, Gemini ou outro provedor. Assim, os contratos e testes permanecem locais, previsíveis e portáveis.
 
 ## Automações implementadas
 
@@ -108,13 +116,17 @@ Guardar apenas o status atual não explica como o lead chegou até ele. Eventos 
 
 Credenciais privilegiadas e regras sensíveis não pertencem ao frontend. Escritas administrativas e integrações críticas ficam em serviços controlados.
 
+### IA como fonte não confiável até validação
+
+A saída de um modelo é probabilística. Antes de alimentar score, CRM ou automações, ela é convertida em um contrato estruturado, validada e submetida a um limite de confiança.
+
 ### Observabilidade
 
 Fluxos automatizados precisam registrar falhas, tentativas e contexto suficiente para diagnóstico. Automação que falha em silêncio cria risco operacional.
 
 ### Testabilidade
 
-Regras de qualificação e normalização são mantidas em funções pequenas e previsíveis para poderem ser verificadas automaticamente antes de mudanças entrarem na branch principal.
+Regras de qualificação, normalização e contratos de IA são mantidos em funções pequenas e previsíveis para poderem ser verificados automaticamente antes de mudanças entrarem na branch principal.
 
 ## O que aprendi
 
