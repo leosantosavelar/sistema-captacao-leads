@@ -2,7 +2,7 @@
 
 Cobre a jornada completa de aquisição — do primeiro clique no anúncio até o registro no CRM — com automação entre todas as etapas.
 
-> Este repositório documenta a **arquitetura** da solução. Não contém código proprietário, dados de clientes nem informações pessoais de leads.
+> Este repositório documenta a **arquitetura** da solução e inclui exemplos técnicos públicos e sanitizados. Não contém código proprietário, dados de clientes, credenciais, prompts internos nem informações pessoais de leads.
 
 ## Objetivo do projeto
 
@@ -16,8 +16,10 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 - Campanhas em Meta Ads, Google, Bing, TikTok e Taboola
 - Atendimento por agente de IA, com leitura de texto, áudio, imagem e PDF
 - Funil de qualificação automatizado, com roteamento por critério
-- CRM em Supabase com Row Level Security, replicado com infraestrutura dedicada (Supabase, PostgreSQL, Redis) por licenciado
+- CRM em Supabase com Row Level Security
+- Infraestrutura baseada em PostgreSQL e serviços auxiliares
 - Dashboards de ganhos e perdas com atribuição por campanha
+- Registro de eventos para rastreabilidade do funil
 
 ## Tecnologias utilizadas
 
@@ -37,26 +39,63 @@ Anúncio
    ↓
 Site (pixel)  →  Captura do lead
    ↓
+API / Webhook  →  Validação, normalização e idempotência
+   ↓
+CRM / Banco  →  Lead + eventos + origem
+   ↓
 Agente de IA  →  Atendimento inicial
    ↓
 Funil de qualificação  →  Roteamento por critério
    ↓
-CRM  →  Registro e atribuição ao consultor
+Consultor  →  Atendimento comercial
    ↓
-Dashboard  →  Ganhos, perdas e origem
+Dashboard  →  Ganhos, perdas e atribuição
 ```
 
-Cada etapa grava evento no banco, o que permite reconstruir o caminho de qualquer lead e medir onde ele parou.
+Cada etapa grava dados que permitem reconstruir o caminho do lead e medir onde ele parou.
+
+A documentação detalhada está em [`docs/architecture.md`](docs/architecture.md).
+
+## Evidências técnicas públicas
+
+Os arquivos abaixo são versões simplificadas e sanitizadas de padrões usados na solução real:
+
+- [`src/webhook-example.js`](src/webhook-example.js) — validação, normalização e idempotência de uma entrada de lead em Node.js.
+- [`database/example-schema.sql`](database/example-schema.sql) — exemplo de modelagem PostgreSQL com leads e eventos.
+- [`database/rls-example.sql`](database/rls-example.sql) — exemplo conceitual de Row Level Security no Supabase.
+- [`examples/webhook-payload.json`](examples/webhook-payload.json) — payload demonstrativo de entrada de lead.
+- [`docs/architecture.md`](docs/architecture.md) — decisões de arquitetura, observabilidade e segurança.
+
+Esses exemplos existem para demonstrar raciocínio técnico sem publicar regras comerciais, prompts, credenciais ou infraestrutura proprietária.
 
 ## Automações implementadas
 
 - **Follow-up de reativação** — recupera leads dos últimos 45 dias respeitando teto diário de envios, horário comercial e intervalos variáveis para evitar bloqueio de canal.
-- **Notificação de lead qualificado** — a cada 10 minutos identifica leads atribuídos ainda não comunicados e avisa o consultor responsável, com limite por ciclo e janela de horário.
-- **Retenção de mídias** — expurgo automático de arquivos após 45 dias.
+- **Notificação de lead qualificado** — identifica leads atribuídos ainda não comunicados e avisa o consultor responsável dentro das regras operacionais.
+- **Retenção de mídias** — expurgo automático de arquivos após o período definido pela operação.
+- **Registro de eventos** — etapas relevantes são persistidas para auditoria, atribuição e diagnóstico.
 
 ## Escala
 
-Mais de mil leads atendidos pelo agente em operações de clientes distintos, com taxa de qualificação em torno de 27%. O agente responde em menos de um minuto e usa um buffer de 14 segundos para agrupar mensagens fragmentadas — o lead escreve em três mensagens soltas e recebe uma resposta única e coerente.
+Mais de mil leads atendidos pelo agente em operações de clientes distintos, com taxa de qualificação em torno de 27%. O agente responde em menos de um minuto e usa um buffer para agrupar mensagens fragmentadas, permitindo transformar várias mensagens consecutivas em uma única entrada coerente para processamento.
+
+## Decisões de engenharia
+
+### Idempotência
+
+Integrações podem reenviar o mesmo evento. Por isso, entradas externas precisam de uma chave que permita reconhecer e ignorar duplicidades antes de executar ações novamente.
+
+### Eventos além do estado atual
+
+Guardar apenas o status atual não explica como o lead chegou até ele. Eventos permitem reconstruir a jornada e medir tempo entre etapas.
+
+### Backend como fronteira de confiança
+
+Credenciais privilegiadas e regras sensíveis não pertencem ao frontend. Escritas administrativas e integrações críticas ficam em serviços controlados.
+
+### Observabilidade
+
+Fluxos automatizados precisam registrar falhas, tentativas e contexto suficiente para diagnóstico. Automação que falha em silêncio cria risco operacional.
 
 ## O que aprendi
 
@@ -67,6 +106,19 @@ Mais de mil leads atendidos pelo agente em operações de clientes distintos, co
 **Automação precisa de ponto de falha visível.** Fluxo que quebra em silêncio é pior que processo manual, porque ninguém percebe até o prejuízo aparecer. Log e alerta viraram parte da entrega.
 
 **Métrica isolada não explica queda de resultado.** Atribuir uma queda a uma única etapa do funil, sem medir as anteriores e posteriores, leva a decisão errada.
+
+## Segurança e privacidade
+
+Este repositório não publica:
+
+- credenciais ou tokens;
+- dados pessoais de leads;
+- números reais de telefone;
+- prompts proprietários;
+- regras comerciais completas;
+- endpoints de produção;
+- workflows integrais de clientes;
+- segredos de infraestrutura.
 
 ## Status
 
