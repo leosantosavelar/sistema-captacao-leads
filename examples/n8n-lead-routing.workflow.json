@@ -1,0 +1,51 @@
+{
+  "name": "Public Demo - Lead Routing",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "public-demo-lead"
+      }
+    },
+    {
+      "name": "Normalize Lead",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json; return [{ json: { eventId: body.event_id, fullName: String(body.lead?.full_name ?? '').trim(), phone: String(body.lead?.phone ?? '').replace(/\\D/g, ''), source: body.source ?? 'unknown' } }];"
+      }
+    },
+    {
+      "name": "Qualification API",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.invalid/api/qualify",
+        "sendBody": true,
+        "jsonBody": "={{ $json }}"
+      }
+    },
+    {
+      "name": "Route by Priority",
+      "type": "n8n-nodes-base.switch",
+      "parameters": {
+        "value1": "={{ $json.priority }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Normalize Lead", "type": "main", "index": 0 }]]
+    },
+    "Normalize Lead": {
+      "main": [[{ "node": "Qualification API", "type": "main", "index": 0 }]]
+    },
+    "Qualification API": {
+      "main": [[{ "node": "Route by Priority", "type": "main", "index": 0 }]]
+    }
+  },
+  "meta": {
+    "note": "Workflow demonstrativo e sanitizado. URLs, credenciais, IDs, regras e integrações reais foram removidos."
+  }
+}

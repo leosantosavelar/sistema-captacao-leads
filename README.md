@@ -21,7 +21,7 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 - Infraestrutura baseada em PostgreSQL e serviços auxiliares
 - Dashboards de ganhos e perdas com atribuição por campanha
 - Registro de eventos para rastreabilidade do funil
-- Testes automatizados e CI com GitHub Actions
+- Testes automatizados e CI com GitHub Actions para Node.js e Python
 
 ## Tecnologias utilizadas
 
@@ -33,7 +33,7 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 | Integrações | APIs REST, JSON, webhooks |
 | IA | Agentes para atendimento, classificação e qualificação |
 | Mensuração | Pixels de conversão e rastreamento de origem |
-| Qualidade | node:test, GitHub Actions |
+| Qualidade | node:test, unittest, GitHub Actions |
 
 ## Arquitetura
 
@@ -68,11 +68,14 @@ Os arquivos abaixo são versões simplificadas e sanitizadas de padrões usados 
 - [`src/webhook-example.js`](src/webhook-example.js) — validação, normalização e idempotência de uma entrada de lead em Node.js.
 - [`src/ai-classification-example.js`](src/ai-classification-example.js) — contrato JSON, validação de saída e conversão da interpretação da IA em sinais estruturados.
 - [`src/qualification-example.js`](src/qualification-example.js) — score, prioridade, qualificação e roteamento determinístico.
+- [`python/lead_scoring.py`](python/lead_scoring.py) — implementação equivalente de scoring e roteamento em Python.
 - [`test/ai-classification-example.test.js`](test/ai-classification-example.test.js) — testes do contrato de classificação por IA.
-- [`test/qualification-example.test.js`](test/qualification-example.test.js) — testes automatizados da camada de qualificação.
+- [`test/qualification-example.test.js`](test/qualification-example.test.js) — testes automatizados da camada de qualificação em Node.js.
+- [`python/test_lead_scoring.py`](python/test_lead_scoring.py) — testes automatizados da implementação Python.
 - [`database/example-schema.sql`](database/example-schema.sql) — exemplo de modelagem PostgreSQL com leads e eventos.
 - [`database/rls-example.sql`](database/rls-example.sql) — exemplo conceitual de Row Level Security no Supabase.
 - [`examples/webhook-payload.json`](examples/webhook-payload.json) — payload demonstrativo de entrada de lead.
+- [`examples/n8n-lead-routing.workflow.json`](examples/n8n-lead-routing.workflow.json) — workflow n8n sanitizado para entrada, normalização, qualificação e roteamento.
 - [`docs/architecture.md`](docs/architecture.md) — decisões de arquitetura, observabilidade e segurança.
 - [`docs/qualification.md`](docs/qualification.md) — separação entre regras determinísticas e interpretação por IA.
 - [`docs/ai-classification.md`](docs/ai-classification.md) — contrato estruturado, confiança e fronteira entre IA e efeitos no sistema.
