@@ -1,0 +1,12 @@
+{
+  "name": "sistema-captacao-leads-public-case",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Exemplos públicos e sanitizados de padrões usados em um sistema integrado de captação e qualificação de leads.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
