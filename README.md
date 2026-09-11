@@ -15,11 +15,12 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 - Sites de captação com rastreamento por pixel
 - Campanhas em Meta Ads, Google, Bing, TikTok e Taboola
 - Atendimento por agente de IA, com leitura de texto, áudio, imagem e PDF
-- Funil de qualificação automatizado, com roteamento por critério
+- Funil de qualificação automatizado, com score e roteamento por critério
 - CRM em Supabase com Row Level Security
 - Infraestrutura baseada em PostgreSQL e serviços auxiliares
 - Dashboards de ganhos e perdas com atribuição por campanha
 - Registro de eventos para rastreabilidade do funil
+- Testes automatizados e CI com GitHub Actions
 
 ## Tecnologias utilizadas
 
@@ -31,6 +32,7 @@ O objetivo foi eliminar esse intervalo: um fluxo único e rastreável em que cad
 | Integrações | APIs REST, JSON, webhooks |
 | IA | Agentes para atendimento e qualificação |
 | Mensuração | Pixels de conversão e rastreamento de origem |
+| Qualidade | node:test, GitHub Actions |
 
 ## Arquitetura
 
@@ -45,7 +47,7 @@ CRM / Banco  →  Lead + eventos + origem
    ↓
 Agente de IA  →  Atendimento inicial
    ↓
-Funil de qualificação  →  Roteamento por critério
+Qualificação  →  Score + prioridade + roteamento
    ↓
 Consultor  →  Atendimento comercial
    ↓
@@ -61,12 +63,25 @@ A documentação detalhada está em [`docs/architecture.md`](docs/architecture.m
 Os arquivos abaixo são versões simplificadas e sanitizadas de padrões usados na solução real:
 
 - [`src/webhook-example.js`](src/webhook-example.js) — validação, normalização e idempotência de uma entrada de lead em Node.js.
+- [`src/qualification-example.js`](src/qualification-example.js) — score, prioridade, qualificação e roteamento determinístico.
+- [`test/qualification-example.test.js`](test/qualification-example.test.js) — testes automatizados da camada de qualificação.
 - [`database/example-schema.sql`](database/example-schema.sql) — exemplo de modelagem PostgreSQL com leads e eventos.
 - [`database/rls-example.sql`](database/rls-example.sql) — exemplo conceitual de Row Level Security no Supabase.
 - [`examples/webhook-payload.json`](examples/webhook-payload.json) — payload demonstrativo de entrada de lead.
 - [`docs/architecture.md`](docs/architecture.md) — decisões de arquitetura, observabilidade e segurança.
+- [`docs/qualification.md`](docs/qualification.md) — separação entre regras determinísticas e interpretação por IA.
 
 Esses exemplos existem para demonstrar raciocínio técnico sem publicar regras comerciais, prompts, credenciais ou infraestrutura proprietária.
+
+## Qualificação: regras + IA
+
+Nem toda decisão precisa de um modelo de linguagem. Critérios objetivos podem ser resolvidos por regras auditáveis, enquanto IA é mais útil na interpretação de linguagem natural, contexto e intenção.
+
+O exemplo público segue este princípio:
+
+> **IA interpreta; regras controlam efeitos críticos.**
+
+Uma camada de IA pode enriquecer sinais como intenção, urgência percebida, objeção e solução de interesse. Antes de alterar CRM, atribuir um responsável ou disparar uma ação, o resultado deve ser convertido em dados estruturados e validado.
 
 ## Automações implementadas
 
@@ -96,6 +111,10 @@ Credenciais privilegiadas e regras sensíveis não pertencem ao frontend. Escrit
 ### Observabilidade
 
 Fluxos automatizados precisam registrar falhas, tentativas e contexto suficiente para diagnóstico. Automação que falha em silêncio cria risco operacional.
+
+### Testabilidade
+
+Regras de qualificação e normalização são mantidas em funções pequenas e previsíveis para poderem ser verificadas automaticamente antes de mudanças entrarem na branch principal.
 
 ## O que aprendi
 
